@@ -9,8 +9,8 @@ async function createTransporter() {
     port: 465,
     secure: true,
     auth: {
-      user: 'olubodekehinde2019@gmail.com',
-      pass: 'tcuu hpva hvqb kzop'
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD
     }
   });
 
