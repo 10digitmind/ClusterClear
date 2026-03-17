@@ -1,16 +1,13 @@
 const express = require('express')
-const dotenv = require('dotenv')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const authRoutes = require("./Route/authRoute");
-require('dotenv').config();
+
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
 const app = express();
-
-dotenv.config();
-
-
-
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -24,17 +21,14 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 mongoose
-  .connect(process.env.MONGO_URL) 
-  
+  .connect(process.env.MONGO_URL)
   .then(() => {
-    console.log('connected the to database')
-  
+    console.log('connected to database');
+
     app.listen(PORT, () => {
-      console.log(`HTTPS server running on https://localhost:${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
-    console.log(error);
     console.error("Database connection error:", error.message);
   });
-  
