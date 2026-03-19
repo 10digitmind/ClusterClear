@@ -11,8 +11,12 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: "*", // for now (later restrict)
+  methods: ["GET", "POST"],
+  credentials: true
+}));
 app.use("/api", authRoutes);
-app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("Customer retention API running");

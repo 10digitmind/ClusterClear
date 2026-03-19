@@ -602,6 +602,8 @@ const createWaitList = async (req, res) => {
       monetise,
     });
 
+    console.log(req.body)
+
     await newUser.save();
 
     res.json(newUser);
@@ -611,6 +613,16 @@ const createWaitList = async (req, res) => {
   }
 }
 
+
+const waitListCount = async (req, res) => {
+  try {
+  const count = await Waitlist.countDocuments();
+  res.json({ count })
+  } catch (err) {
+    console.error(err);
+    res.status(500).json(err);
+  }
+}
 
 module.exports = {
   signup,
@@ -627,5 +639,6 @@ module.exports = {
   initialisePayment,
   verifyPayment,
   trackCreatorLinkClick,
-  createWaitList
+  createWaitList,
+  waitListCount
 };

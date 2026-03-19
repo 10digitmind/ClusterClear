@@ -12,7 +12,8 @@ const {
   updateUsername,
   trackCreatorLinkClick,
   getCreatorDashboardStats,
-  createWaitList
+  createWaitList,
+  waitListCount
 } = require("../controller/user");
 const authMiddleware = require("../Middleware/auth");
 
@@ -29,5 +30,7 @@ router.put("/update-username", authMiddleware, updateUsername);
 router.post("/track-link-click/:username", trackCreatorLinkClick);
 router.get("/creator-dashboard-stats", authMiddleware, getCreatorDashboardStats);
 router.post("/create-waitlist", createWaitList);
+router.get("/waitlist-count", waitListCount);
+
 
  module.exports = router;
