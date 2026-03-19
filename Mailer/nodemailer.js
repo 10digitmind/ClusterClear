@@ -5,14 +5,18 @@ async function createTransporter() {
   const hbs = await import('nodemailer-express-handlebars'); // dynamic import
 
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host:process.env.SMTP_HOST,
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_USER,
+      user: process.env.EMAIL_USER ,
       pass: process.env.SMTP_PASSWORD
     }
+
+    
   });
+
+
 
   transporter.use(
     'compile',
@@ -24,7 +28,10 @@ async function createTransporter() {
       viewPath: path.resolve('./views/'),
       extName: '.hbs'
     })
+    
   );
+
+  
   return transporter;
 }
 

@@ -38,7 +38,7 @@ async function sendPasswordResetEmail(userEmail, userName, resetUrl) {
       year: new Date().getFullYear(),
     },
   };
-
+  
   try {
     await transporter.sendMail(mailOptions);
     
