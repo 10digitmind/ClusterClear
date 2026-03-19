@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const authRoutes = require("./Route/authRoute");
+const path = require('path')
 
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
@@ -17,6 +18,8 @@ app.use(cors({
   credentials: true
 }));
 app.use("/api", authRoutes);
+
+app.set('views', path.join(__dirname, 'views'));
 
 app.get("/", (req, res) => {
   res.send("Customer retention API running");
