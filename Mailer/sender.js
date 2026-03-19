@@ -128,7 +128,7 @@ const userName = userEmail.split("@")[0]
     from: process.env.EMAIL_USER,
     to: userEmail,
     subject: "Thanks for joining ",
-    template: "Waitlist", // template name without extension
+    template: "waitlist", // template name without extension
     context: {
      year: new Date().getFullYear(),
      name:userName

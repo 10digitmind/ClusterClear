@@ -18,18 +18,17 @@ async function createTransporter() {
 
 
 
-  transporter.use(
-    'compile',
-    hbs.default({ // note the `.default` when importing ESM
-      viewEngine: {
-        partialsDir: path.resolve('./views/'),
-        defaultLayout: false
-      },
-      viewPath: path.resolve('./views/'),
-      extName: '.hbs'
-    })
-    
-  );
+ transporter.use(
+  'compile',
+  hbs.default({
+    viewEngine: {
+      partialsDir: path.join(__dirname, 'views'), // use __dirname
+      defaultLayout: false
+    },
+    viewPath: path.join(__dirname, 'views'), // use __dirname
+    extName: '.hbs'
+  })
+);
 
   
   return transporter;
