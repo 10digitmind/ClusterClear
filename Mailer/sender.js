@@ -118,10 +118,35 @@ async function mock(userEmail) {
     console.error("Error sending email:", err);
   }
 }
+
+
+
+async function waitlist(userEmail) {
+  const transporter = await createTransporter();
+const userName = userEmail.split("@")[0] 
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject: "Thanks for joining ",
+    template: "waitlist", // template name without extension
+    context: {
+     year: new Date().getFullYear(),
+     name:userName
+     
+    },
+    
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
+}
 // mock('olubodekehinde2019@gmail.com')
 
 
 
 
 
-module.exports = {sendVerificationEmail, sendPasswordResetEmail, welcomeEmail,changePasswordEmail};
+module.exports = {sendVerificationEmail, sendPasswordResetEmail, welcomeEmail,changePasswordEmail,waitlist};

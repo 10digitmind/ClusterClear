@@ -12,7 +12,8 @@ const {
   sendVerificationEmail,
   welcomeEmail,
   sendPasswordResetEmail,
-  changePasswordEmail
+  changePasswordEmail,
+  waitlist
 } = require("../Mailer/sender");
 // Helper: generate JWT
 
@@ -592,26 +593,47 @@ const createWaitList = async (req, res) => {
   try {
     const { email, platform, missedDeals, monetise } = req.body;
 
-    const existing = await Waitlist.findOne({ email });
-    if (existing) return res.status(400).json({ msg: "You already joined the waiting list" });
+    // ✅ Basic validation
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
 
+    // ✅ Normalize email (VERY important)
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // ✅ Check if user already exists
+    const existing = await Waitlist.findOne({ email: normalizedEmail });
+
+    if (existing) {
+      return res.status(200).json({
+        msg: "You're already on the waitlist 🚀",
+        existing: true,
+      });
+    }
+
+    // ✅ Create new user
     const newUser = new Waitlist({
-      email,
+      email: normalizedEmail,
       platform,
       missedDeals,
       monetise,
     });
 
-    console.log(req.body)
-
     await newUser.save();
+await waitlist(normalizedEmail)
+    // ✅ Success response
+    res.status(201).json({
+      msg: "Thanks for joining 🚀 We’ll notify you when we launch",
+      existing: false,
+    });
 
-    res.json(newUser);
   } catch (err) {
-    console.error(err);
-    res.status(500).json(err);
+    console.error("WAITLIST ERROR:", err);
+    res.status(500).json({
+      msg: "Something went wrong. Please try again.",
+    });
   }
-}
+};
 
 
 const waitListCount = async (req, res) => {
