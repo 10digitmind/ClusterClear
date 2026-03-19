@@ -593,7 +593,7 @@ const createWaitList = async (req, res) => {
     const { email, platform, missedDeals, monetise } = req.body;
 
     const existing = await Waitlist.findOne({ email });
-    if (existing) return res.status(400).json({ msg: "Already joined" });
+    if (existing) return res.status(400).json({ msg: "You already joined the waiting list" });
 
     const newUser = new Waitlist({
       email,
