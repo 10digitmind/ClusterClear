@@ -19,7 +19,7 @@ app.use(cors({
 }));
 app.use("/api", authRoutes);
 
-app.set('views', path.join(__dirname, '../views'));
+
 
 app.get("/", (req, res) => {
   res.send("Customer retention API running");
