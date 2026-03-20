@@ -12,6 +12,7 @@ async function createTransporter() {
     auth: {
       user: process.env.EMAIL_USER ,
       pass: process.env.SMTP_PASSWORD
+      
     }
 
     
