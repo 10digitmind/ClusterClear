@@ -14,23 +14,7 @@ async function createTransporter() {
       pass: process.env.SMTP_PASSWORD
       
     }
-
-    
   });
-
-
-
- transporter.use(
-  'compile',
-  hbs.default({
-    viewEngine: {
-      partialsDir: viewsPath, // use __dirname
-      defaultLayout: false
-    },
-    viewPath: viewsPath, // use __dirname
-    extName: '.hbs'
-  })
-);
 
   
   return transporter;

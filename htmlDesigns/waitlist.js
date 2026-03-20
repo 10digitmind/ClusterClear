@@ -1,4 +1,4 @@
-export const waitList = (name, year) => `
+ const waitList = (name, year) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,3 +82,5 @@ export const waitList = (name, year) => `
 
 </body>
 </html>`;
+
+module.exports= waitList

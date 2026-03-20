@@ -1,6 +1,6 @@
 
 const createTransporter = require("../Mailer/nodemailer");
-const {waitList} = require("../controller/htmlDesigns/waitlist");
+const waitList = require("../htmlDesigns/waitlist");
 
 async function sendVerificationEmail(userEmail, userName, token) {
   const transporter = await createTransporter();
