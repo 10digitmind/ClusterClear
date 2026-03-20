@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 const path = require('path');
-
+const viewsPath = path.join(__dirname, '../views');
 
 async function createTransporter() {
   const hbs = await import('nodemailer-express-handlebars'); // dynamic import
@@ -24,10 +24,10 @@ async function createTransporter() {
   'compile',
   hbs.default({
     viewEngine: {
-      partialsDir: path.join(__dirname, '../views'), // use __dirname
+      partialsDir: viewsPath, // use __dirname
       defaultLayout: false
     },
-    viewPath: path.join(__dirname, '../views'), // use __dirname
+    viewPath: viewsPath, // use __dirname
     extName: '.hbs'
   })
 );

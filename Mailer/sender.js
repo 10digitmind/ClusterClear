@@ -1,3 +1,7 @@
+
+const path = require("path");
+
+
 const createTransporter = require("../Mailer/nodemailer");
 
 async function sendVerificationEmail(userEmail, userName, token) {
