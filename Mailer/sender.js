@@ -1,6 +1,6 @@
 
 const path = require("path");
-
+  const fs = require('fs');
 
 const createTransporter = require("../Mailer/nodemailer");
 
@@ -141,6 +141,13 @@ const userName = userEmail.split("@")[0]
     },
 
   };
+
+
+
+console.log(
+  "File exists:",
+  fs.existsSync(path.join(viewsPath, 'waitlist.hbs'))
+);
 
   try {
     await transporter.sendMail(mailOptions);
