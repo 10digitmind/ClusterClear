@@ -1,5 +1,6 @@
 
 const createTransporter = require("../Mailer/nodemailer");
+const { waitList } = require("../views/waitlist");
 
 async function sendVerificationEmail(userEmail, userName, token) {
   const transporter = await createTransporter();
@@ -129,18 +130,9 @@ const userName = userEmail.split("@")[0]
     from: `ClusterClear <${process.env.EMAIL_USER}>`,
     to: userEmail,
     subject: "Thanks for joining ",
-    template: "waitlist", // template name without extension
-    
-    context: {
-     year: new Date().getFullYear(),
-     name:userName
-     
-    },
+     html: waitList(userName, new Date().getFullYear()),// template name without extension
 
   };
-
-
-
   try {
     await transporter.sendMail(mailOptions);
   } catch (err) {
