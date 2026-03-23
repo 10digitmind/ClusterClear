@@ -1,6 +1,5 @@
 
 const createTransporter = require("../Mailer/nodemailer");
-const passwordChange = require("../htmlDesigns/PasswordChange");
 const resetEmailPassword = require("../htmlDesigns/resetEmailPassword");
 const verifyEmail = require("../htmlDesigns/verfiyEmail");
 const waitList = require("../htmlDesigns/waitlist");
@@ -69,24 +68,24 @@ async function welcomeEmail(userEmail, name, dashboardUrl) {
 }
 
 
-async function changePasswordEmail(userEmail, name, resetUrl,changedAt) {
-  const transporter = await createTransporter();
+// async function changePasswordEmail(userEmail, name, resetUrl,changedAt) {
+//   const transporter = await createTransporter();
 
-  const mailOptions = {
-   from: `ClusterClear <${process.env.EMAIL_USER}>`,
-    to: userEmail,
-    subject: "Password Changed Successfully",
-    html: passwordChange( name, resetUrl,changedAt,new Date().getFullYear() ), // template name without extension
+//   const mailOptions = {
+//    from: `ClusterClear <${process.env.EMAIL_USER}>`,
+//     to: userEmail,
+//     subject: "Password Changed Successfully",
+//     html: passwordChange( name, resetUrl,changedAt,new Date().getFullYear() ), // template name without extension
    
-  };
+//   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Welcome email sent to ${userEmail}`);
-  } catch (err) {
-    console.error("Error sending email:", err);
-  }
-}
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Welcome email sent to ${userEmail}`);
+//   } catch (err) {
+//     console.error("Error sending email:", err);
+//   }
+// }
 
 
 
@@ -113,4 +112,4 @@ const userName = userEmail.split("@")[0]
 
 
 
-module.exports = {sendVerificationEmail, sendPasswordResetEmail, welcomeEmail,changePasswordEmail,waitlist};
+module.exports = {sendVerificationEmail, sendPasswordResetEmail, welcomeEmail,waitlist};
