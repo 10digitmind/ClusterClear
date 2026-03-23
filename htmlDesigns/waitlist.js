@@ -57,7 +57,7 @@
         </p>
 
         <p style="margin:0 0 26px 0;color:#555555;font-size:14px;">
-        Thanks again for joining — your priority access means you’re at the front of the line! 🚀
+        Thanks again for joining — your priority access means you’re at the front of the line! 🚀🚀🚀
         </p>
 
         <p style="margin:0;color:#777777;font-size:14px;">
