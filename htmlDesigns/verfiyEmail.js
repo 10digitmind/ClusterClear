@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+const verifyEmail =(name,verificationUrl,year)=>`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -32,7 +32,7 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;back
 <tr>
 <td style="padding:40px 36px;color:#222222;font-size:15px;line-height:1.6;">
 
-<p style="margin:0 0 18px 0;">Hello {{name}},</p>
+<p style="margin:0 0 18px 0;">Hello ${name},</p>
 
 <p style="margin:0 0 18px 0;">
 Welcome to <strong>ClusterClear</strong>. We're excited to have you on board.
@@ -46,7 +46,7 @@ Please verify your email to activate your account.
 <table role="presentation" align="center" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center" bgcolor="#6355FF" style="border-radius:6px;">
-<a href="{{verificationUrl}}"
+<a href=${verificationUrl}
 style="
 display:inline-block;
 padding:14px 34px;
@@ -69,8 +69,8 @@ If the button doesn't work, copy and paste this link into your browser:
 </p>
 
 <p style="margin:0 0 20px 0;word-break:break-word;">
-<a href="{{verificationUrl}}" style="color:#6355FF;text-decoration:underline;">
-{{verificationUrl}}
+<a href=${verificationUrl}style="color:#6355FF;text-decoration:underline;">
+${verificationUrl}
 </a>
 </p>
 
@@ -84,7 +84,7 @@ This verification link expires in 24 hours.
 <!-- Footer -->
 <tr>
 <td align="center" style="padding:22px;background:#6355FF;color:#ffffff;font-size:12px;">
-© {{year}} ClusterClear. All rights reserved.
+© ${year} ClusterClear. All rights reserved.
 </td>
 </tr>
 
@@ -96,3 +96,6 @@ This verification link expires in 24 hours.
 
 </body>
 </html>
+`
+
+module.exports = verifyEmail

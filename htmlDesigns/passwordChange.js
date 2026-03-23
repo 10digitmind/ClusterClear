@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+const passwordChange =(name,changedAt,resetUrl,year)=>`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -30,18 +30,18 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;back
 <tr>
 <td style="padding:40px 36px;color:#222222;font-size:15px;line-height:1.6;">
 
-<p style="margin:0 0 18px 0;">Hello {{name}},</p>
+<p style="margin:0 0 18px 0;">Hello ${name},</p>
 
 <p style="margin:0 0 18px 0;">
 This is a confirmation that your password for your <strong>ClusterClear</strong> account was successfully changed.
 </p>
 
 <p style="margin:0 0 18px 0;">
-<strong>Password Changed At:</strong> {{changedAt}}
+<strong>Password Changed At:</strong> ${changedAt}
 </p>
 
 <p style="margin:0 0 26px 0;">
-If you did not perform this change, please <a href="{{resetUrl}}" style="color:#6355FF;text-decoration:underline;">reset your password immediately</a> to secure your account.
+If you did not perform this change, please <a href="${resetUrl}" style="color:#6355FF;text-decoration:underline;">reset your password immediately</a> to secure your account.
 </p>
 
 <p style="margin:0 0 18px 0;color:#555555;">
@@ -54,7 +54,7 @@ For your security, we recommend using a strong, unique password and not sharing 
 <!-- Footer -->
 <tr>
 <td align="center" style="padding:22px;background:#6355FF;color:#ffffff;font-size:12px;">
-© {{year}} ClusterClear. All rights reserved.
+© ${year} ClusterClear. All rights reserved.
 </td>
 </tr>
 
@@ -65,4 +65,6 @@ For your security, we recommend using a strong, unique password and not sharing 
 </table>
 
 </body>
-</html>
+</html>`
+
+module.exports = passwordChange

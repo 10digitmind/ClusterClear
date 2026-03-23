@@ -1,3 +1,4 @@
+const welcome = (name,dashboardUrl,year) =>`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +33,7 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;back
 <tr>
 <td style="padding:40px 36px;color:#222222;font-size:15px;line-height:1.6;">
 
-<p style="margin:0 0 18px 0;">Hello {{name}},</p>
+<p style="margin:0 0 18px 0;">Hello ${name},</p>
 
 <p style="margin:0 0 18px 0;">
 Welcome to <strong>ClusterClear</strong>! We're thrilled to have you join our creator community.
@@ -46,7 +47,7 @@ Your next step is to <strong>set your Priority Fee</strong> and generate your un
 <table role="presentation" align="center" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center" bgcolor="#6355FF" style="border-radius:6px;">
-<a href="{{dashboardUrl}}"
+<a href="${dashboardUrl}"
 style="
 display:inline-block;
 padding:14px 34px;
@@ -69,8 +70,8 @@ If the button doesn't work, copy and paste this link into your browser:
 </p>
 
 <p style="margin:0 0 20px 0;word-break:break-word;">
-<a href="{{dashboardUrl}}" style="color:#6355FF;text-decoration:underline;">
-{{dashboardUrl}}
+<a href="${dashboardUrl}" style="color:#6355FF;text-decoration:underline;">
+${dashboardUrl}
 </a>
 </p>
 
@@ -84,7 +85,7 @@ Once your link is ready, you can pin it on your bio and start receiving priority
 <!-- Footer -->
 <tr>
 <td align="center" style="padding:22px;background:#6355FF;color:#ffffff;font-size:12px;">
-© {{year}} ClusterClear. All rights reserved.
+© ${year} ClusterClear. All rights reserved.
 </td>
 </tr>
 
@@ -96,3 +97,6 @@ Once your link is ready, you can pin it on your bio and start receiving priority
 
 </body>
 </html>
+
+`
+module.exports = welcome

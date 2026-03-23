@@ -7,6 +7,8 @@ const generateToken = require("../controller/Utils/generateToken");
 const CreatorProfile = require("../models/CreatorProfile");
 const Message = require("../models/Message");
 const Waitlist = require("../models/Waitlist");
+const Analytics = require("../models/analyticsSchema");
+const getDateParts = require('../controller/Utils/getDateParts')
 
 const {
   sendVerificationEmail,
@@ -646,6 +648,35 @@ const waitListCount = async (req, res) => {
   }
 }
 
+
+
+
+const trackVisit = async (req, res) => {
+  try {
+    const { date, day, week, month, year } = getDateParts();
+    const { source } = req.body;
+
+    let record = await Analytics.findOne({ date });
+
+    if (!record) {
+      record = new Analytics({ date, day, week, month, year });
+    }
+
+    record.visits += 1;
+
+    if (source) {
+      const current = record.sources.get(source) || 0;
+      record.sources.set(source, current + 1);
+    }
+
+    await record.save();
+
+    res.json({ msg: "Tracked" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Error tracking visit" });
+  }
+};
 module.exports = {
   signup,
   login,
@@ -662,5 +693,6 @@ module.exports = {
   verifyPayment,
   trackCreatorLinkClick,
   createWaitList,
-  waitListCount
+  waitListCount,
+  trackVisit
 };

@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+const resetEmailPassword = (name,resetUrl,year)=>`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>New Priority Message - ClusterClear</title>
+<title>Reset Your Password</title>
 </head>
 
 <body style="margin:0;padding:0;background:#f7f7f9;font-family:Arial,Helvetica,sans-serif;">
@@ -15,9 +15,14 @@
 
 <!-- Header -->
 <tr>
-<td align="center" width="100%" bgcolor="#ffffff" style="padding:24px;border-bottom:1px solid #f1f1f1;background:#ffffff">
+<td align="center" width="100%" bgcolor="white" style="padding:24px;border-bottom:1px solid #f1f1f1;background:#ffffff">
+
+
 
 <a href="https://www.clusterclear.app" style="text-decoration:none;">
+
+
+
 <img 
 src="https://i.postimg.cc/J4zBvpSN/newcluster.png"
 alt="ClusterClear"
@@ -32,39 +37,21 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;back
 <tr>
 <td style="padding:40px 36px;color:#222222;font-size:15px;line-height:1.6;">
 
-<p style="margin:0 0 18px 0;">Hello Alex,</p>
+<p style="margin:0 0 18px 0;">Hello ${name},</p>
 
 <p style="margin:0 0 18px 0;">
-You’ve received a <strong>Priority Message</strong> from a fan on <strong>ClusterClear</strong>.
+We received a request to reset your ClusterClear password.
 </p>
 
-<p style="margin:0 0 18px 0;">
-This fan paid a <strong>₦10,000 priority fee</strong> to make sure their message reaches you first.
+<p style="margin:0 0 26px 0;">
+Click the button below to set a new password. This link will expire in 24 hours.
 </p>
-
-<p style="margin:0 0 20px 0;">
-Your fan is waiting for your response.
-</p>
-
-<!-- Message Box -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-<tr>
-<td style="background:#f4f4f7;border-radius:8px;padding:18px;color:#333333;font-size:14px;line-height:1.6;border:1px solid #ececec;">
-<strong>Fan Message:</strong><br><br>
-
-Hey Alex, I really love your content!  
-I’m working with a fashion brand launching next month and we’d love to collaborate with you.  
-Could we discuss a potential partnership?
-
-</td>
-</tr>
-</table>
 
 <!-- Button -->
 <table role="presentation" align="center" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center" bgcolor="#6355FF" style="border-radius:6px;">
-<a href="https://www.clusterclear.app"
+<a href="${resetUrl}
 style="
 display:inline-block;
 padding:14px 34px;
@@ -75,18 +62,25 @@ text-decoration:none;
 border-radius:6px;
 line-height:20px;
 ">
-View & Reply Now
+Reset Password
 </a>
 </td>
 </tr>
 </table>
 
+<!-- Fallback Link -->
 <p style="margin:32px 0 10px 0;color:#555555;">
-Fans who send priority messages expect a faster response.
+If the button doesn't work, copy and paste this link into your browser:
+</p>
+
+<p style="margin:0 0 20px 0;word-break:break-word;">
+<a href="${resetUrl}" style="color:#6355FF;text-decoration:underline;">
+${resetUrl}
+</a>
 </p>
 
 <p style="margin:0;color:#777777;font-size:14px;">
-Reply now and don’t miss valuable opportunities like brand collaborations.
+If you didn’t request a password reset, you can safely ignore this email.
 </p>
 
 </td>
@@ -95,7 +89,7 @@ Reply now and don’t miss valuable opportunities like brand collaborations.
 <!-- Footer -->
 <tr>
 <td align="center" style="padding:22px;background:#6355FF;color:#ffffff;font-size:12px;">
-© 2026 ClusterClear. All rights reserved.
+© ${year} ClusterClear. All rights reserved.
 </td>
 </tr>
 
@@ -107,3 +101,6 @@ Reply now and don’t miss valuable opportunities like brand collaborations.
 
 </body>
 </html>
+`
+
+module.exports = resetEmailPassword
