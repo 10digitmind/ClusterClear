@@ -9,6 +9,9 @@ const Message = require("../models/Message");
 const Waitlist = require("../models/Waitlist");
 const Analytics = require("../models/analyticsSchema");
 const getDateParts = require('../controller/Utils/getDateParts')
+const uploadToCloudflare = require('../controller/Utils/cloudinaryConfig')
+
+
 
 const {
   sendVerificationEmail,
@@ -21,7 +24,7 @@ const {
 
 const signup = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, } = req.body;
 
     if (!email || !password) {
       return res
@@ -31,16 +34,15 @@ const signup = async (req, res) => {
 
     const existing = await User.findOne({ email });
     if (existing)
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({ message: "Email already exists please log in " });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const emailVerificationToken = crypto.randomBytes(20).toString("hex");
-    const userName = generateUsername(email);
+  const userName = await generateUsername(email);
     const user = await User.create({
       email,
       password: hashedPassword,
-      username: userName,
       emailVerificationToken,
       wallet: { balance: 0 } });
 
@@ -53,7 +55,7 @@ const signup = async (req, res) => {
     }
 
     res.status(201).json({
-      message: "User created, verify your email",
+      message: "Check your email to verify your account 📩",
       token: generateToken(user),
     });
   } catch (err) {
@@ -68,24 +70,40 @@ const verifyEmail = async (req, res) => {
     const { token } = req.params;
 
     const user = await User.findOne({ emailVerificationToken: token });
-    if (!user) return res.status(400).json({ message: "Invalid token" });
-    if (user.isEmailVerified)
-      return res.status(400).json({ message: "Email already verified" });
+
+    if (!user) {
+      return res.status(400).json({ status: "invalid" });
+    }
+
+    // Optional but IMPORTANT if you use expiry
+    if (user.verificationTokenExpiry && user.verificationTokenExpiry < Date.now()) {
+      return res.status(400).json({ status: "expired" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.json({ status: "already_verified" });
+    }
 
     user.isEmailVerified = true;
     user.emailVerificationToken = null;
+    user.verificationTokenExpiry = null;
+
     await user.save();
 
     const userEmail = user.email;
     const name = userEmail.split("@")[0];
     const dashboardUrl = `${process.env.CLIENT_URL}/dashboard`;
 
-    welcomeEmail(userEmail, name, dashboardUrl);
+    // IMPORTANT: await email
+    await welcomeEmail(userEmail, name, dashboardUrl);
 
-    res.json({ message: "Email verified" });
+    return res.json({
+      status: "verified"
+    });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ status: "error" });
   }
 };
 
@@ -199,59 +217,14 @@ const changePassword = async (req, res) => {
 };
 
 
+// create profile 
 
-const createCreatorProfile = async (req, res) => {
+
+
+const updateCreatorProfile = async (req, res) => {
   try {
-    const { priorityFee } = req.body;
-
-    const userId = req.user.id; // from auth middleware
-
-    // Check if creator profile already exists
-    const existingProfile = await CreatorProfile.findOne({ user: userId });
-
-
-    if (!priorityFee || priorityFee <= 0) {
-  return res.status(400).json({
-    message: "Priority fee must be greater than 0",
-  });
-}
-    if (existingProfile) {
-      return res.status(400).json({
-        message: "Creator profile already exists",
-      });
-    }
-
-    // Create creator profile
-    const creatorProfile = new CreatorProfile({
-      user: userId,
-      priorityFee,
-      wallet: { balance: 0 }
-    });
-
-    await creatorProfile.save();
-
-    res.status(201).json({
-      message: "Creator profile created successfully",
-      creatorProfile,
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-const updatePriorityFee = async (req, res) => {
-  try {
-    const { priorityFee } = req.body;
-
+    const { priorityFee, profileBio } = req.body;
     const userId = req.user.id;
-
-    if (!priorityFee || priorityFee <= 0) {
-      return res.status(400).json({
-        message: "Priority fee must be greater than 0",
-      });
-    }
 
     const creatorProfile = await CreatorProfile.findOne({ user: userId });
 
@@ -261,13 +234,37 @@ const updatePriorityFee = async (req, res) => {
       });
     }
 
-    creatorProfile.priorityFee = priorityFee;
+    // update fee
+    if (priorityFee !== undefined) {
+      if (priorityFee <= 0) {
+        return res.status(400).json({
+          message: "Priority fee must be greater than 0",
+        });
+      }
+      creatorProfile.priorityFee = priorityFee;
+    }
+
+    // update bio
+    if (profileBio !== undefined) {
+      creatorProfile.profileBio = profileBio;
+    }
+
+    // update image (UPLOAD FLOW)
+    if (req.file) {
+      const imageUrl = await uploadToCloudflare(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      creatorProfile.profilePic = imageUrl;
+    }
 
     await creatorProfile.save();
 
     res.status(200).json({
-      message: "Priority fee updated successfully",
-      priorityFee: creatorProfile.priorityFee,
+      message: "Profile updated successfully",
+      creatorProfile,
     });
 
   } catch (error) {
@@ -423,10 +420,11 @@ const verifyPayment = async (req, res) => {
       });
     }
 
+
+
     // 4️⃣ Create message
     const message = await Message.create({
       creator: creatorId,
-      buyerEmail,
       message: messageText,
       amountPaid,
       reference,
@@ -437,6 +435,22 @@ const verifyPayment = async (req, res) => {
     creatorProfile.totalRequests += 1;
     await creatorProfile.save();
 
+    let user = await User.findOne({ email: buyerEmail });
+
+if (!user) {
+  user = await User.create({
+    email: buyerEmail,
+    role: "buyer",
+    isPaidUser: true,
+    isEmailVerified: false,
+
+  });
+} else {
+  user.role = "buyer";
+  user.isPaidUser = true;
+  await user.save();
+}
+  const emailVerificationToken = crypto.randomBytes(20).toString("hex");
     // 6️⃣ Send notifications
     const creatorName = creator.username || creator.email.split("@")[0];
 
@@ -445,14 +459,13 @@ const verifyPayment = async (req, res) => {
         creator.email,
         creatorName,
         buyerEmail,
-        messageText,
         amountPaid
       ),
 
       sendPaymentConfirmationToBuyer(
         buyerEmail,
         creatorName,
-        messageText
+        emailVerificationToken
       ),
     ]);
 
@@ -648,9 +661,6 @@ const waitListCount = async (req, res) => {
   }
 }
 
-
-
-
 const trackVisit = async (req, res) => {
   try {
     const { date, day, week, month, year } = getDateParts();
@@ -677,6 +687,254 @@ const trackVisit = async (req, res) => {
     res.status(500).json({ msg: "Error tracking visit" });
   }
 };
+
+
+// GET /buyer/messages
+const getBuyerMessages = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const messages = await Message.find({ buyerEmail: email })
+      .sort({ createdAt: -1 });
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// GET /creator/messages
+const getCreatorMessages = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const messages = await Message.find({ creator: userId })
+      .sort({ createdAt: -1 });
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// GET /me
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+const checkAvailableUsername = async (req, res) => {
+  try {
+    let { username } = req.params;
+
+    if (!username) {
+      return res.status(400).json({
+        message: "Username is required",
+        available: false
+      });
+    }
+
+    username = username.trim().toLowerCase();
+
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({
+        message: "Invalid username format",
+        available: false
+      });
+    }
+
+    const reserved = ["admin", "support", "login", "signup", "root"];
+
+    if (reserved.includes(username)) {
+      return res.status(400).json({
+        message: "Username not allowed",
+        available: false
+      });
+    }
+
+    const existingUser = await User.findOne({ username });
+
+    return res.json({
+      available: !existingUser
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      available: false
+    });
+  }
+};
+
+
+const stepOne = async (req, res) => {
+  try {
+    const { username, fullName, userType } = req.body;
+
+    if (!username || !userType) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    const normalizedUsername = username.toLowerCase().trim();
+
+    const existingUser = await User.findOne({
+      username: normalizedUsername,
+      _id: { $ne: req.user.id }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        username: normalizedUsername,
+        fullName,
+        userType,
+        onboardingStage: "step_two"
+      },
+      { new: true }
+    );
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const stepTwo = async (req, res) => {
+  try {
+    const { bio, priorityFee } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+  if (!priorityFee || priorityFee <= 0) {
+      return res.status(400).json({
+        message: "Priority fee must be greater than 0",
+      });
+    }
+    let profilePicUrl;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    // ✅ Validate file
+    if (req.file && !allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid file type. Only images allowed.",
+      });
+    }
+
+    // ✅ Upload if file exists
+    if (req.file) {
+      profilePicUrl = await uploadToCloudflare(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+    }
+
+    // ✅ Build update object safely
+    const updateData = {};
+
+    if (profilePicUrl) {
+      updateData.profilePic = profilePicUrl;
+    }
+
+    // Only creators get these
+    if (user.userType === "creator") {
+      if (bio !== undefined) updateData.bio = bio;
+      if (priorityFee !== undefined) updateData.priorityFee = priorityFee;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      updateData,
+      { new: true }
+    ).select("-password");
+
+    res.json(updatedUser);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+const completeOnboarding = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { onboardingCompleted: true },
+      { new: true }
+    );
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🚫 Already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    // 🔐 Generate new token
+    const token = crypto.randomBytes(32).toString("hex");
+
+    user.emailVerificationToken = token;
+    user.verificationTokenExpiry = Date.now() + 1000 * 60 * 60 * 24; // 24h
+
+    await user.save();
+
+    // 🌍 Send email
+    await sendVerificationEmail(
+      user.email,
+      user.name,
+      token
+    );
+
+    return res.json({
+      message: "Verification email sent successfully",
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
 module.exports = {
   signup,
   login,
@@ -684,8 +942,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
-  createCreatorProfile,
-  updatePriorityFee,
+  updateCreatorProfile,
   updateUsername,
   respondToMessage,
   getCreatorDashboardStats,
@@ -694,5 +951,13 @@ module.exports = {
   trackCreatorLinkClick,
   createWaitList,
   waitListCount,
-  trackVisit
+  trackVisit,
+  getBuyerMessages,
+  getCreatorMessages,
+  getMe,
+  checkAvailableUsername,
+  stepOne,
+  stepTwo,
+  completeOnboarding,
+  resendVerificationEmail
 };

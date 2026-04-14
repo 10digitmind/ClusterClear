@@ -1,4 +1,5 @@
-const verifyEmail =(name,verificationUrl,year)=>`<!DOCTYPE html>
+const verifyEmail = (name, verificationUrl, year) => `
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -15,14 +16,14 @@ const verifyEmail =(name,verificationUrl,year)=>`<!DOCTYPE html>
 
 <!-- Header -->
 <tr>
-<td align="center"  width="100%" bgcolor="#ffffff"   style="padding:24px;border-bottom:1px solid #f1f1f1; background:#ffffff;">
+<td align="center" bgcolor="#ffffff" style="padding:24px;border-bottom:1px solid #f1f1f1;">
 
 <a href="https://www.clusterclear.app" style="text-decoration:none;">
 <img 
 src="https://i.postimg.cc/J4zBvpSN/newcluster.png"
 alt="ClusterClear"
 width="200"
-style="display:block;border:0;outline:none;text-decoration:none;margin:auto;background:#ffffff">
+style="display:block;border:0;outline:none;text-decoration:none;margin:auto;">
 </a>
 
 </td>
@@ -30,7 +31,7 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;back
 
 <!-- Body -->
 <tr>
-<td style="padding:40px 36px;color:#222222;font-size:15px;line-height:1.6;">
+<td style="padding:40px 36px;color:#222;font-size:15px;line-height:1.6;">
 
 <p style="margin:0 0 18px 0;">Hello ${name},</p>
 
@@ -46,7 +47,7 @@ Please verify your email to activate your account.
 <table role="presentation" align="center" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center" bgcolor="#6355FF" style="border-radius:6px;">
-<a href=${verificationUrl}
+<a href="${verificationUrl}"
 style="
 display:inline-block;
 padding:14px 34px;
@@ -63,18 +64,18 @@ Verify Email
 </tr>
 </table>
 
-<!-- Fallback Link -->
-<p style="margin:32px 0 10px 0;color:#555555;">
-If the button doesn't work, copy and paste this link into your browser:
+<!-- Fallback -->
+<p style="margin:32px 0 10px 0;color:#555;">
+If the button doesn't work, copy and paste this link:
 </p>
 
 <p style="margin:0 0 20px 0;word-break:break-word;">
-<a href=${verificationUrl}style="color:#6355FF;text-decoration:underline;">
+<a href="${verificationUrl}" style="color:#6355FF;text-decoration:underline;">
 ${verificationUrl}
 </a>
 </p>
 
-<p style="margin:0;color:#777777;font-size:14px;">
+<p style="margin:0;color:#777;font-size:14px;">
 This verification link expires in 24 hours.
 </p>
 
@@ -96,6 +97,6 @@ This verification link expires in 24 hours.
 
 </body>
 </html>
-`
+`;
 
-module.exports = verifyEmail
+module.exports = verifyEmail;

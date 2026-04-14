@@ -13,6 +13,17 @@ const creatorProfileSchema = new mongoose.Schema(
         required: true,
         default: 5
     },
+
+    profileBio:{
+type:String,
+default:'Priority creator inbox active. Message for collaborations, promotions, or paid requests. Fast response guaranteed for serious inquiries'
+    },
+
+    profilePic:{
+
+type:String
+    },
+
     linkClicks:{
 type: Number,
 default: 0
@@ -23,6 +34,10 @@ default: 0
     responseRate: {
   type: Number,
   default: 0
+},
+isProfileComplete:{
+type:Boolean,
+default:false
 },
 
 totalRequests: {

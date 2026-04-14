@@ -7,16 +7,11 @@ const messageSchema = new mongoose.Schema({
     required: true,
   },
 
-  buyerEmail: {
-    type: String,
+  buyer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
-
-   PhoneNumber: {
-    type: Number,
-    required: true,
-  },
-
 
   message: {
     type: String,
