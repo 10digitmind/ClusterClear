@@ -1,4 +1,5 @@
 const express = require('express')
+require("dotenv").config();
 const mongoose = require('mongoose')
 const cors = require('cors')
 const authRoutes = require("./Route/authRoute");
@@ -14,7 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: "*", // for now (later restrict)
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST",, "PUT", "PATCH", "DELETE"],
   credentials: true
 }));
 app.use("/api", authRoutes);
@@ -39,3 +40,4 @@ mongoose
   .catch((error) => {
     console.error("Database connection error:", error.message);
   });
+

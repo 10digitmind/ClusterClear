@@ -22,7 +22,8 @@ const {
    stepOne,
     stepTwo,
     completeOnboarding,
-    resendVerificationEmail
+    resendVerificationEmail,
+    getMe
 } = require("../controller/user");
 const authMiddleware = require("../Middleware/auth");
 
@@ -33,8 +34,8 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.post("/change-password", authMiddleware, changePassword);
-router.post("/onboarding-step-one", authMiddleware, stepOne);
-router.post("/creator-profile", authMiddleware,upload.single("profilePic"), stepTwo);
+router.patch("/step-one", authMiddleware, stepOne);
+router.patch("/step-two", authMiddleware,upload.single("profilePic"), stepTwo);
 router.post("/complete-onboarding", authMiddleware, completeOnboarding);
 router.put("/update-creator-profile", authMiddleware,   upload.single("profilePic"), updateCreatorProfile);
 router.put("/update-username", authMiddleware, updateUsername);
@@ -45,6 +46,7 @@ router.get("/waitlist-count", waitListCount);
 router.post("/track-visit", trackVisit);
 router.get("/check-username/:username", checkAvailableUsername);
 router.post("/resend-verification", resendVerificationEmail);
+router.get("/me", authMiddleware, getMe);
 
 
  module.exports = router;

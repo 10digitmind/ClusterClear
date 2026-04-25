@@ -3,6 +3,7 @@ const  FormData = require("form-data")
 
      const CLOUDFLARE_ID = process.env.CLOUDFLARE_ID
       const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN
+
          const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ID}/images/v1`;
 
 const uploadToCloudflare = async (fileBuffer, filename, mimetype) => {

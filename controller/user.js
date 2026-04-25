@@ -44,7 +44,25 @@ const signup = async (req, res) => {
       email,
       password: hashedPassword,
       emailVerificationToken,
-      wallet: { balance: 0 } });
+      wallet: {
+    availableBalance: 0,
+    pendingBalance: 0,
+    totalEarned: 0,
+    lifetimeWithdrawn: 0,
+  },
+
+   bankDetails: {
+    bankName: null,
+    accountName: null,
+    accountNumber: null,
+
+  },
+      onboardingStage:'none'
+    
+    });
+
+  
+      
 
     const userEmail = email.toLowerCase().trim();
     const token = emailVerificationToken;
@@ -69,8 +87,12 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
 
-    const user = await User.findOne({ emailVerificationToken: token });
-
+    const user = await User.findOne({
+      $or: [
+        { emailVerificationToken: token },
+        { isEmailVerified: true }
+      ]
+    });
     if (!user) {
       return res.status(400).json({ status: "invalid" });
     }
@@ -98,7 +120,8 @@ const verifyEmail = async (req, res) => {
     await welcomeEmail(userEmail, name, dashboardUrl);
 
     return res.json({
-      status: "verified"
+      status: "verified",
+      user:user.onboardingStage
     });
 
   } catch (err) {
@@ -112,26 +135,40 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // ✅ DO NOT exclude password here
     const user = await User.findOne({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
     });
 
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    // ✅ Remove password manually before sending
+    const userSafe = user.toObject();
+    delete userSafe.password;
 
     res.json({
       token: generateToken(user),
-      user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-      },
+      user: userSafe,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -152,7 +189,7 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     const userName = user.username;
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
     await sendPasswordResetEmail(email, userName, resetUrl);
     res.json({ message: "Reset email sent" });
   } catch (err) {
@@ -497,16 +534,10 @@ const trackCreatorLinkClick = async (req, res) => {
     return res.status(404).json({ error: "Creator not found" });
   }
 
-  const creatorProfile = await CreatorProfile.findOne({ user: creator._id });
-
-  if (!creatorProfile) {
-    return res.status(404).json({ error: "Creator profile not found" });
-  }
-
   // increment click count
-  creatorProfile.linkClicks += 1;
+  creator.linkClicks += 1;
 
-  await creatorProfile.save();
+  await creator.save();
 
   res.json({
     success: true,
@@ -717,15 +748,17 @@ const getCreatorMessages = async (req, res) => {
 };
 // GET /me
 const getMe = async (req, res) => {
+
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.userId).select("-password");
+
 
     res.json(user);
   } catch (error) {
+ 
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 const checkAvailableUsername = async (req, res) => {
   try {
@@ -772,7 +805,6 @@ const checkAvailableUsername = async (req, res) => {
   }
 };
 
-
 const stepOne = async (req, res) => {
   try {
     const { username, fullName, userType } = req.body;
@@ -780,12 +812,12 @@ const stepOne = async (req, res) => {
     if (!username || !userType) {
       return res.status(400).json({ message: "Required fields missing" });
     }
-
     const normalizedUsername = username.toLowerCase().trim();
 
+    
     const existingUser = await User.findOne({
       username: normalizedUsername,
-      _id: { $ne: req.user.id }
+      _id: { $ne: req.userId }
     });
 
     if (existingUser) {
@@ -793,19 +825,25 @@ const stepOne = async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.userId, // ✅ FIXED
       {
         username: normalizedUsername,
         fullName,
-        userType,
-        onboardingStage: "step_two"
+        role: userType,
+        onboardingStage: "step_two",
+        creatorLink: `https://clusterclear.app/creator/${normalizedUsername}`
       },
       { new: true }
     );
 
-    res.status(200).json(user);
+    return res.status(200).json({
+      message: "Step one completed",
+      user
+    });
+
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -813,28 +851,34 @@ const stepTwo = async (req, res) => {
   try {
     const { bio, priorityFee } = req.body;
 
-    const user = await User.findById(req.user.id);
+    if (!req.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findById(req.userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-  if (!priorityFee || priorityFee <= 0) {
-      return res.status(400).json({
-        message: "Priority fee must be greater than 0",
-      });
-    }
-    let profilePicUrl;
 
+    let profilePicUrl;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
-    // ✅ Validate file
+    // ✅ Validate file type
     if (req.file && !allowedTypes.includes(req.file.mimetype)) {
       return res.status(400).json({
         message: "Invalid file type. Only images allowed.",
       });
     }
 
-    // ✅ Upload if file exists
+    // ✅ Validate file size
+    if (req.file && req.file.size > 2 * 1024 * 1024) {
+      return res.status(400).json({
+        message: "File too large (max 2MB)",
+      });
+    }
+
+    // ✅ Upload file
     if (req.file) {
       profilePicUrl = await uploadToCloudflare(
         req.file.buffer,
@@ -843,30 +887,46 @@ const stepTwo = async (req, res) => {
       );
     }
 
-    // ✅ Build update object safely
     const updateData = {};
 
     if (profilePicUrl) {
       updateData.profilePic = profilePicUrl;
     }
 
-    // Only creators get these
-    if (user.userType === "creator") {
+    // ✅ Creator-specific logic
+    if (user.role === "creator") {
+      const fee = Number(priorityFee);
+
+      if (isNaN(fee) || fee <= 0) {
+        return res.status(400).json({
+          message: "Priority fee must be a number greater than 0",
+        });
+      }
+
       if (bio !== undefined) updateData.bio = bio;
-      if (priorityFee !== undefined) updateData.priorityFee = priorityFee;
+      updateData.priorityFee = fee;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true }
-    ).select("-password");
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: "No valid fields to update",
+      });
+    }
 
-    res.json(updatedUser);
+    // ✅ Move onboarding forward
+    updateData.onboardingStage = "completed";
+
+    const updatedUser = await User.findByIdAndUpdate(
+  req.userId,
+  updateData,
+  { returnDocument: "after" }
+).select("-password");
+
+    return res.status(200).json({updatedUser,message:"Onboarding completed"});
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -874,7 +934,7 @@ const stepTwo = async (req, res) => {
 const completeOnboarding = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.userId,
       { onboardingCompleted: true },
       { new: true }
     );
