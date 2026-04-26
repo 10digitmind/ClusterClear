@@ -24,7 +24,9 @@ const {
     completeOnboarding,
     resendVerificationEmail,
     getMe,
-    updateBankDetails
+    updateBankDetails,
+    getCreatorByUsername,
+    deleteAccount
 } = require("../controller/user");
 const authMiddleware = require("../Middleware/auth");
 
@@ -49,6 +51,8 @@ router.get("/check-username/:username", checkAvailableUsername);
 router.post("/resend-verification", resendVerificationEmail);
 router.get("/me", authMiddleware, getMe);
 router.patch("/update-bank-details", authMiddleware, updateBankDetails);
+router.delete("/delete-account", authMiddleware, deleteAccount);
+router.get("/creator/:username", getCreatorByUsername);
 
 
  module.exports = router;

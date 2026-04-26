@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema({
   priorityFee: { type: Number, default: 0 },
   profilePic: { type: String },
   bio: { type:String,
-default:'Priority creator inbox active. Message for collaborations, promotions, or paid requests. Fast response guaranteed for serious inquiries'
-    },
+default: 'This is where I respond first and fastest. Message me for collaborations, promotions, or paid requests. Fast response guaranteed for serious inquiries.' }
+    ,
   socialLinks: {
     instagram: String,
     tiktok: String,

@@ -10,6 +10,7 @@ const Waitlist = require("../models/Waitlist");
 const Analytics = require("../models/analyticsSchema");
 const getDateParts = require('../controller/Utils/getDateParts')
 const uploadToCloudflare = require('../controller/Utils/cloudinaryConfig')
+const accountDeletion = require('../models/accountDeletionSchema')
 
 
 
@@ -790,8 +791,9 @@ const getMe = async (req, res) => {
 
   try {
     const user = await User.findById(req.userId).select("-password");
-
-
+    if (!user){
+      return res.status(404).json({ message: "User not found" });
+    }
     res.json(user);
   } catch (error) {
  
@@ -1091,6 +1093,101 @@ const updateBankDetails = async (req, res) => {
 
 
 
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { reason, feedback } = req.body;
+
+    // validate reason
+    if (!reason) {
+      return res.status(400).json({
+        message: "Deletion reason is required",
+      });
+    }
+
+    // find user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // optional safety check if user has money
+    if (user.wallet?.availableBalance > 0) {
+      return res.status(400).json({
+        message:
+          "Please withdraw your available balance before deleting account",
+      });
+    }
+
+    // save deletion feedback
+    await accountDeletion.create({
+      user: user._id,
+      email: user.email,
+      reason,
+      feedback: feedback || "",
+    });
+
+   
+    // delete user account
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
+
+
+
+
+const getCreatorByUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // validate
+    if (!username) {
+      return res.status(400).json({
+        message: "Username is required",
+      });
+    }
+
+    // find creator
+    const creator = await User.findOne({
+      username: username.toLowerCase().trim(),
+      role: "creator",
+    }).select(
+      "username bio profilePic priorityFee isEmailVerified creatorLink totalRequests totalResponded averageResponseTime responseRate"
+    );
+
+    if (!creator) {
+      return res.status(404).json({
+        message: "Creator not found",
+      });
+    }
+
+    return res.status(200).json({
+      creator,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
+
 
 
 
@@ -1119,5 +1216,7 @@ module.exports = {
   stepTwo,
   completeOnboarding,
   resendVerificationEmail,
-  updateBankDetails
+  updateBankDetails,
+  deleteAccount,
+  getCreatorByUsername
 };
