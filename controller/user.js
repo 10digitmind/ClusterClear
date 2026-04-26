@@ -204,7 +204,7 @@ const resetPassword = async (req, res) => {
     const { password } = req.body;
     const { token } = req.params;
 
-    console.log("Reset token:", token);
+    
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
@@ -242,9 +242,11 @@ const changePassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL}/dashboard`;
-    const changedAt = new Date().toLocaleString();
-    changePasswordEmail(user.email, user.username, resetUrl, changedAt);
+    const resetUrl = `${process.env.CLIENT_URL}/dashboard` || 'https://www.clusterclear.app/dashboard';
+    const changedAt = new Date().toLocaleString("en-US");
+    
+   
+    changePasswordEmail(user.email, user.username,changedAt, resetUrl,);
 
     res.json({ message: "Password changed successfully" });
   } catch (err) {
@@ -260,10 +262,10 @@ const changePassword = async (req, res) => {
 
 const updateCreatorProfile = async (req, res) => {
   try {
-    const { priorityFee, profileBio } = req.body;
-    const userId = req.user.id;
+    const { priorityFee, profileBio, username } = req.body;
+    const userId = req.userId;
 
-    const creatorProfile = await CreatorProfile.findOne({ user: userId });
+    const creatorProfile = await User.findById(userId);
 
     if (!creatorProfile) {
       return res.status(404).json({
@@ -271,22 +273,56 @@ const updateCreatorProfile = async (req, res) => {
       });
     }
 
-    // update fee
+    // =========================
+    // UPDATE USERNAME (SAFE)
+    // =========================
+    if (username !== undefined) {
+      const normalizedUsername = username.toLowerCase().trim();
+
+      const existingUser = await User.findOne({
+        username: normalizedUsername,
+        _id: { $ne: userId },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          message: "Username already taken",
+        });
+      }
+
+      await User.findByIdAndUpdate(userId, {
+        username: normalizedUsername,
+      });
+
+      creatorProfile.username = normalizedUsername;
+      creatorProfile.creatorLink = `https://clusterclear.app/creator/${normalizedUsername}`;
+    }
+
+    // =========================
+    // UPDATE PRIORITY FEE
+    // =========================
     if (priorityFee !== undefined) {
-      if (priorityFee <= 0) {
+      const fee = Number(priorityFee);
+
+      if (isNaN(fee) || fee <= 0) {
         return res.status(400).json({
           message: "Priority fee must be greater than 0",
         });
       }
-      creatorProfile.priorityFee = priorityFee;
+
+      creatorProfile.priorityFee = fee;
     }
 
-    // update bio
+    // =========================
+    // UPDATE BIO
+    // =========================
     if (profileBio !== undefined) {
-      creatorProfile.profileBio = profileBio;
+      creatorProfile.bio = profileBio;
     }
 
-    // update image (UPLOAD FLOW)
+    // =========================
+    // UPDATE IMAGE
+    // =========================
     if (req.file) {
       const imageUrl = await uploadToCloudflare(
         req.file.buffer,
@@ -297,16 +333,19 @@ const updateCreatorProfile = async (req, res) => {
       creatorProfile.profilePic = imageUrl;
     }
 
+
     await creatorProfile.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Profile updated successfully",
       creatorProfile,
     });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
@@ -322,7 +361,7 @@ const updateUsername = async (req, res) => {
 
     // Update username
     const updatedUser = await User.findOneAndUpdate(
-      { _id: req.user.id },
+      { _id: req.userId },
       { username: username },           // use the variable, not string
       { returnDocument: 'after' }       // returns the updated document
     );
@@ -994,6 +1033,66 @@ const resendVerificationEmail = async (req, res) => {
 
 
 
+// controllers/userController.js
+
+const updateBankDetails = async (req, res) => {
+  try {
+    const { bankName, accountName, accountNumber } = req.body;
+
+    // must be logged in
+    if (!req.userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    // basic validation
+    if (!bankName || !accountName || !accountNumber) {
+      return res.status(400).json({
+        message: "All bank details are required",
+      });
+    }
+
+    // account number validation (adjust by country if needed)
+   if (!/^\d{10}$/.test(accountNumber)) {
+  return res.status(400).json({
+    message: "Account number must be 10 digits",
+  });
+}
+
+    // update user bank details
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      {
+        bankDetails: {
+          bankName: bankName.trim(),
+          accountName: accountName.trim(),
+          accountNumber: accountNumber.trim(),
+        },
+      },
+      {
+        returnDocument: "after",
+      }
+    ).select("-password");
+
+    return res.status(200).json({
+      message: "Bank details updated successfully",
+      user: updatedUser,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
+
+
+
+
 
 module.exports = {
   signup,
@@ -1019,5 +1118,6 @@ module.exports = {
   stepOne,
   stepTwo,
   completeOnboarding,
-  resendVerificationEmail
+  resendVerificationEmail,
+  updateBankDetails
 };

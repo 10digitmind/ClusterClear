@@ -23,7 +23,8 @@ const {
     stepTwo,
     completeOnboarding,
     resendVerificationEmail,
-    getMe
+    getMe,
+    updateBankDetails
 } = require("../controller/user");
 const authMiddleware = require("../Middleware/auth");
 
@@ -33,11 +34,11 @@ router.get("/verify-email/:token", verifyEmail);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-router.post("/change-password", authMiddleware, changePassword);
+router.patch("/change-password", authMiddleware, changePassword);
 router.patch("/step-one", authMiddleware, stepOne);
 router.patch("/step-two", authMiddleware,upload.single("profilePic"), stepTwo);
 router.post("/complete-onboarding", authMiddleware, completeOnboarding);
-router.put("/update-creator-profile", authMiddleware,   upload.single("profilePic"), updateCreatorProfile);
+router.patch("/update-creator-profile",authMiddleware,upload.single("profilePic"), updateCreatorProfile);
 router.put("/update-username", authMiddleware, updateUsername);
 router.post("/track-link-click/:username", trackCreatorLinkClick);
 router.get("/creator-dashboard-stats", authMiddleware, getCreatorDashboardStats);
@@ -47,6 +48,7 @@ router.post("/track-visit", trackVisit);
 router.get("/check-username/:username", checkAvailableUsername);
 router.post("/resend-verification", resendVerificationEmail);
 router.get("/me", authMiddleware, getMe);
+router.patch("/update-bank-details", authMiddleware, updateBankDetails);
 
 
  module.exports = router;
