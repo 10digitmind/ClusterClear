@@ -9,7 +9,7 @@ const welcome = require("../htmlDesigns/welcome");
 
 async function sendVerificationEmail(userEmail, userName, token) {
   const transporter = await createTransporter();
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
 
   const mailOptions = {
     from: `ClusterClear <${process.env.EMAIL_USER}>`,

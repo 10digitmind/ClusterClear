@@ -40,7 +40,7 @@ const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const emailVerificationToken = crypto.randomBytes(20).toString("hex");
-  const userName = await generateUsername(email);
+ const userName = email.split("@")[0];
     const user = await User.create({
       email,
       password: hashedPassword,
@@ -62,11 +62,10 @@ const signup = async (req, res) => {
     
     });
 
-  
-      
 
     const userEmail = email.toLowerCase().trim();
     const token = emailVerificationToken;
+   
 
     // Send email verification if email exists
     if (email) {
@@ -88,46 +87,60 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
 
+    // 1. FIND USER BY TOKEN ONLY
     const user = await User.findOne({
-      $or: [
-        { emailVerificationToken: token },
-        { isEmailVerified: true }
-      ]
+      emailVerificationToken: token,
     });
-    if (!user) {
-      return res.status(400).json({ status: "invalid" });
+    // 2. INVALID TOKEN
+  if (!user ) {
+      return res.status(400).json({
+        status: "Invalid or expired token",
+      });
     }
-
-    // Optional but IMPORTANT if you use expiry
-    if (user.verificationTokenExpiry && user.verificationTokenExpiry < Date.now()) {
-      return res.status(400).json({ status: "expired" });
-    }
-
+   // 3. ALREADY VERIFIED (ONLY THIS USER)
     if (user.isEmailVerified) {
-      return res.json({ status: "already_verified" });
+      return res.json({
+        status: "already_verified",
+      });
     }
 
+  
+
+    // 4. EXPIRY CHECK
+    if (
+      user.verificationTokenExpiry &&
+      user.verificationTokenExpiry < Date.now()
+    ) {
+      return res.status(400).json({
+        status: "expired",
+      });
+    }
+
+    // 5. VERIFY USER
     user.isEmailVerified = true;
     user.emailVerificationToken = null;
     user.verificationTokenExpiry = null;
 
     await user.save();
 
+    // 6. WELCOME EMAIL
     const userEmail = user.email;
     const name = userEmail.split("@")[0];
     const dashboardUrl = `${process.env.CLIENT_URL}/dashboard`;
 
-    // IMPORTANT: await email
     await welcomeEmail(userEmail, name, dashboardUrl);
 
+    // 7. SUCCESS RESPONSE
     return res.json({
       status: "verified",
-      user:user.onboardingStage
+      user: user.onboardingStage,
     });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: "error" });
+    return res.status(500).json({
+      status: "error",
+    });
   }
 };
 

@@ -1,4 +1,4 @@
-const verifyEmail = (name, verificationUrl, year) => `
+const verifyEmail = (userName,verificationUrl,year) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,7 +33,7 @@ style="display:block;border:0;outline:none;text-decoration:none;margin:auto;">
 <tr>
 <td style="padding:40px 36px;color:#222;font-size:15px;line-height:1.6;">
 
-<p style="margin:0 0 18px 0;">Hello ${name},</p>
+<p style="margin:0 0 18px 0;">Hello ${userName},</p>
 
 <p style="margin:0 0 18px 0;">
 Welcome to <strong>ClusterClear</strong>. We're excited to have you on board.
