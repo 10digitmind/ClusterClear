@@ -5,6 +5,7 @@ const passwordChange = require("../htmlDesigns/passwordChange");
 const verifyEmail = require("../htmlDesigns/verfiyEmail");
 const waitList = require("../htmlDesigns/waitlist");
 const welcome = require("../htmlDesigns/welcome");
+const priorityMessageAlertToCreator =require ('../htmlDesigns/priorityMessageAlertToCreator')
 
 
 async function sendVerificationEmail(userEmail, userName, token) {
@@ -84,6 +85,25 @@ async function changePasswordEmail(userEmail, name, changedAt,resetUrl) {
     to: userEmail,
     subject: "Password Changed Successfully",
     html: passwordChange( name,changedAt, resetUrl,new Date().getFullYear() ), // template name without extension
+   
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Welcome email sent to ${userEmail}`);
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
+}
+
+async function sendAlertToCreator(userEmail, name, changedAt,resetUrl) {
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+   from: `ClusterClear <${process.env.EMAIL_USER}>`,
+    to: userEmail,
+    subject: "Password Changed Successfully",
+    html: priorityMessageAlertToCreator( name,changedAt, resetUrl,new Date().getFullYear() ), // template name without extension
    
   };
 

@@ -5,9 +5,11 @@ const crypto = require("crypto");
 const generateUsername = require("../controller/Utils/generateUsername");
 const generateToken = require("../controller/Utils/generateToken");
 const CreatorProfile = require("../models/CreatorProfile");
-const Message = require("../models/Message");
+const axios = require('axios')
 const Waitlist = require("../models/Waitlist");
 const Analytics = require("../models/analyticsSchema");
+const Conversation = require("../models/Conversation");
+const Message = require("../models/MessageSchema"); // re
 const getDateParts = require('../controller/Utils/getDateParts')
 const uploadToCloudflare = require('../controller/Utils/cloudinaryConfig')
 const accountDeletion = require('../models/accountDeletionSchema')
@@ -40,7 +42,7 @@ const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const emailVerificationToken = crypto.randomBytes(20).toString("hex");
- const userName = email.split("@")[0];
+
     const user = await User.create({
       email,
       password: hashedPassword,
@@ -62,11 +64,10 @@ const signup = async (req, res) => {
     
     });
 
-
+ const userName = email.split("@")[0];
     const userEmail = email.toLowerCase().trim();
     const token = emailVerificationToken;
    
-
     // Send email verification if email exists
     if (email) {
       await sendVerificationEmail(userEmail, userName, token);
@@ -393,36 +394,42 @@ const updateUsername = async (req, res) => {
 
 const initialisePayment = async (req, res) => {
   try {
-    const { creatorId, buyerEmail, message } = req.body;
+    const {
+      creatorId,
+      buyerEmail,
+      buyerPhone,
+      subject,
+      message,
+    } = req.body;
 
     if (!creatorId || !buyerEmail || !message) {
       return res.status(400).json({
-        error: "Creator ID, buyer email and message are required.",
+        error: "Missing required fields",
       });
     }
 
-    // Find creator profile
-    const creatorProfile = await CreatorProfile.findOne({ user: creatorId });
+    const creator = await User.findById(creatorId);
 
-    if (!creatorProfile) {
-      return res.status(404).json({ error: "Creator profile not found." });
+    if (!creator) {
+      return res.status(404).json({
+        error: "Creator not found",
+      });
     }
 
-    const priorityFee = creatorProfile.priorityFee;
+    const amount = creator.priorityFee;
 
-    // Create metadata for Paystack
-    const metadata = {
-      creatorId,
-      message,
-    };
-
-    // Initialize Paystack transaction
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
         email: buyerEmail,
-        amount: priorityFee * 100, // convert to kobo
-        metadata,
+        amount: amount * 100,
+        metadata: {
+          creatorId,
+          buyerEmail,
+          buyerPhone,
+          subject,
+          message,
+        },
       },
       {
         headers: {
@@ -432,23 +439,24 @@ const initialisePayment = async (req, res) => {
       }
     );
 
-    return res.status(200).json({
+    return res.json({
       success: true,
-      paymentLink: response.data.data.authorization_url,
-      reference: response.data.data.reference,
+      paymentLink:
+        response.data.data.authorization_url,
+      reference:
+        response.data.data.reference,
     });
 
   } catch (error) {
-    console.error(
-      "Error initializing payment:",
-      error.response?.data || error.message
-    );
+    console.error(error.response?.data || error);
 
     return res.status(500).json({
-      error: "Failed to initialize payment.",
+      error: "Failed to initialize payment",
     });
   }
 };
+
+
 
 
 const verifyPayment = async (req, res) => {
@@ -459,7 +467,7 @@ const verifyPayment = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Verify transaction with Paystack
+    // 1️⃣ Verify payment with Paystack
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
@@ -479,69 +487,72 @@ const verifyPayment = async (req, res) => {
 
     const creatorId = metadata.creatorId;
     const messageText = metadata.message;
+    const buyerEmail = transaction.customer.email;
+    const buyerPhone = metadata?.phone || null;
+    const buyerName = metadata?.name || null;
+    const amountPaid = transaction.amount / 100;
 
     if (!mongoose.Types.ObjectId.isValid(creatorId)) {
       return res.status(400).json({ error: "Invalid creator ID." });
     }
 
-    // 2️⃣ Get creator
+    // 2️⃣ Prevent duplicate processing
+    const existingConversation = await Conversation.findOne({ buyerEmail, creator: creatorId, paymentStatus: "paid" });
+
+    if (existingConversation) {
+      return res.json({
+        success: true,
+        message: "Payment already processed.",
+      });
+    }
+
+    // 3️⃣ Get or create creator user
     const creator = await User.findById(creatorId);
 
     if (!creator) {
       return res.status(404).json({ error: "Creator not found." });
     }
 
-    const creatorProfile = await CreatorProfile.findOne({ user: creatorId });
+    // 4️⃣ Create or get buyer user
+    let buyerUser = await User.findOne({ email: buyerEmail });
 
-    if (!creatorProfile) {
-      return res.status(404).json({ error: "Creator profile not found." });
-    }
-
-    const buyerEmail = transaction.customer.email;
-    const amountPaid = transaction.amount / 100;
-
-    // 3️⃣ Prevent duplicate messages
-    const existingMessage = await Message.findOne({ reference });
-
-    if (existingMessage) {
-      return res.json({
-        success: true,
-        message: "Message already delivered.",
+    if (!buyerUser) {
+      buyerUser = await User.create({
+        email: buyerEmail,
+        role: "buyer",
+        isPaidUser: true,
+        isEmailVerified: false,
       });
     }
 
-
-
-    // 4️⃣ Create message
-    const message = await Message.create({
+    // 5️⃣ Create Conversation (THREAD)
+    const conversation = await Conversation.create({
       creator: creatorId,
-      message: messageText,
+      buyerEmail,
+      buyerPhone,
+      buyerName,
+      buyerUser: buyerUser._id,
       amountPaid,
-      reference,
-      status: "new",
+      paymentStatus: "paid",
+      status: "open",
+      lastMessage: messageText,
+      lastMessageAt: new Date(),
+      creatorUnreadCount: 1,
+      buyerUnreadCount: 0,
     });
 
-    // 5️⃣ Update creator stats
-    creatorProfile.totalRequests += 1;
-    await creatorProfile.save();
+    // 6️⃣ Create first message
+    await Message.create({
+      conversation: conversation._id,
+      senderType: "buyer",
+      senderUser: buyerUser._id,
+      text: messageText,
+    });
 
-    let user = await User.findOne({ email: buyerEmail });
+    // 7️⃣ Optional: creator profile stats
+    // (if you have CreatorProfile, update here)
 
-if (!user) {
-  user = await User.create({
-    email: buyerEmail,
-    role: "buyer",
-    isPaidUser: true,
-    isEmailVerified: false,
-
-  });
-} else {
-  user.role = "buyer";
-  user.isPaidUser = true;
-  await user.save();
-}
-  const emailVerificationToken = crypto.randomBytes(20).toString("hex");
-    // 6️⃣ Send notifications
+    // 8️⃣ Send notifications (keep external)
     const creatorName = creator.username || creator.email.split("@")[0];
 
     await Promise.all([
@@ -555,28 +566,26 @@ if (!user) {
       sendPaymentConfirmationToBuyer(
         buyerEmail,
         creatorName,
-        emailVerificationToken
+        crypto.randomBytes(20).toString("hex")
       ),
     ]);
 
-    // 7️⃣ Success response
-    res.json({
+    // 9️⃣ Response
+    return res.json({
       success: true,
-      message: "Priority message delivered to creator.",
-      creator: creator.username,
+      message: "Payment verified and conversation created.",
+      conversationId: conversation._id,
     });
 
   } catch (error) {
-    console.error(
-      "Payment verification error:",
-      error.response?.data || error.message
-    );
+    console.error("Payment verification error:", error.response?.data || error.message);
 
     return res.status(500).json({
       error: "Failed to verify payment.",
     });
   }
 };
+
 
 const trackCreatorLinkClick = async (req, res) => {
   const { username } = req.params;
