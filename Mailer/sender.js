@@ -3,6 +3,7 @@ const createTransporter = require("../Mailer/nodemailer");
 const resetEmailPassword = require("../htmlDesigns/resetEmailPassword");
 const passwordChange = require("../htmlDesigns/passwordChange");
 const verifyEmail = require("../htmlDesigns/verfiyEmail");
+const sendPaymentConfrimationToBuyer = require("../htmlDesigns/paymentConfirmationToBuyer")
 const waitList = require("../htmlDesigns/waitlist");
 const welcome = require("../htmlDesigns/welcome");
 const priorityMessageAlertToCreator =require ('../htmlDesigns/priorityMessageAlertToCreator')
@@ -96,14 +97,17 @@ async function changePasswordEmail(userEmail, name, changedAt,resetUrl) {
   }
 }
 
-async function sendAlertToCreator(userEmail, name, changedAt,resetUrl) {
+async function sendAlertToCreator(userEmail, creatorName,
+  buyerEmail,
+  amountPaid,
+  messagePreview,) {
   const transporter = await createTransporter();
 
   const mailOptions = {
    from: `ClusterClear <${process.env.EMAIL_USER}>`,
     to: userEmail,
-    subject: "Password Changed Successfully",
-    html: priorityMessageAlertToCreator( name,changedAt, resetUrl,new Date().getFullYear() ), // template name without extension
+    subject: "New Paid message",
+    html: priorityMessageAlertToCreator( creatorName,buyerEmail, amountPaid,messagePreview,new Date().getFullYear() ), // template name without extension
    
   };
 
@@ -114,6 +118,30 @@ async function sendAlertToCreator(userEmail, name, changedAt,resetUrl) {
     console.error("Error sending email:", err);
   }
 }
+
+
+async function paymentConfirmationToBuyer(userEmail,   buyerName,
+  creatorName,
+  verifyUrl,) {
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+   from: `ClusterClear <${process.env.EMAIL_USER}>`,
+    to: userEmail,
+    subject: "New Paid message",
+    html: sendPaymentConfrimationToBuyer( buyerName,creatorName, verifyUrl,new Date().getFullYear() ), // template name without extension
+   
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Welcome email sent to ${userEmail}`);
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
+}
+
+
 
 
 
@@ -140,4 +168,4 @@ const userName = userEmail.split("@")[0]
 
 
 
-module.exports = {sendVerificationEmail, sendPasswordResetEmail, welcomeEmail,waitlist,changePasswordEmail};
+module.exports = {sendVerificationEmail, sendPasswordResetEmail, paymentConfirmationToBuyer,welcomeEmail,waitlist,changePasswordEmail,sendAlertToCreator};

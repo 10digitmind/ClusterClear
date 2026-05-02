@@ -27,7 +27,8 @@ const {
     updateBankDetails,
     getCreatorByUsername,
     deleteAccount,
-    initialisePayment
+    initialisePayment,
+    verifyPayment
 } = require("../controller/user");
 const authMiddleware = require("../Middleware/auth");
 
@@ -55,6 +56,7 @@ router.patch("/update-bank-details", authMiddleware, updateBankDetails);
 router.delete("/delete-account", authMiddleware, deleteAccount);
 router.get("/creator/:username", getCreatorByUsername);
 router.post("/initialise-payment", initialisePayment);
+router.get("/verify-payment/:reference", verifyPayment);
 
 
  module.exports = router;

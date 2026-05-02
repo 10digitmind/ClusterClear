@@ -8,7 +8,7 @@ const CreatorProfile = require("../models/CreatorProfile");
 const axios = require('axios')
 const Waitlist = require("../models/Waitlist");
 const Analytics = require("../models/analyticsSchema");
-const Conversation = require("../models/Conversation");
+const Conversation = require("../models/conversation");
 const Message = require("../models/MessageSchema"); // re
 const getDateParts = require('../controller/Utils/getDateParts')
 const uploadToCloudflare = require('../controller/Utils/cloudinaryConfig')
@@ -21,7 +21,10 @@ const {
   welcomeEmail,
   sendPasswordResetEmail,
   changePasswordEmail,
-  waitlist
+  waitlist,
+  sendAlertToCreator,
+  paymentConfirmationToBuyer
+
 } = require("../Mailer/sender");
 // Helper: generate JWT
 
@@ -460,7 +463,7 @@ const initialisePayment = async (req, res) => {
 
 
 const verifyPayment = async (req, res) => {
-  const { reference } = req.body;
+  const { reference } = req.params;
 
   if (!reference) {
     return res.status(400).json({ error: "Reference is required." });
@@ -512,6 +515,7 @@ const verifyPayment = async (req, res) => {
     if (!creator) {
       return res.status(404).json({ error: "Creator not found." });
     }
+creator.pendingBalance+=amountPaid
 
     // 4️⃣ Create or get buyer user
     let buyerUser = await User.findOne({ email: buyerEmail });
@@ -554,19 +558,22 @@ const verifyPayment = async (req, res) => {
 
     // 8️⃣ Send notifications (keep external)
     const creatorName = creator.username || creator.email.split("@")[0];
+const messagePreview = messageText
+const verifyUrl = process.env.CLIENT_URL
 
     await Promise.all([
-      sendPriorityMessageAlertToCreator(
-        creator.email,
+      sendAlertToCreator(
+      creator.email,
         creatorName,
         buyerEmail,
-        amountPaid
+        amountPaid,
+        messagePreview
       ),
 
-      sendPaymentConfirmationToBuyer(
+      paymentConfirmationToBuyer(
         buyerEmail,
         creatorName,
-        crypto.randomBytes(20).toString("hex")
+        verifyUrl
       ),
     ]);
 
