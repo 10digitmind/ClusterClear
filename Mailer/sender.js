@@ -102,14 +102,14 @@ async function sendAlertToCreator(userEmail, creatorName,
   buyerEmail,
   amountPaid,
   messagePreview,
-phoneNumber) {
+phoneNumber,subject) {
   const transporter = await createTransporter();
 
   const mailOptions = {
    from: `ClusterClear <${process.env.EMAIL_USER}>`,
     to: userEmail,
     subject: "New Paid message",
-    html: priorityMessageAlertToCreator( creatorName,buyerEmail, amountPaid,messagePreview,phoneNumber,new Date().getFullYear() ), // template name without extension
+    html: priorityMessageAlertToCreator( creatorName,buyerEmail, amountPaid,messagePreview,phoneNumber,subject,new Date().getFullYear() ), // template name without extension
    
   };
 

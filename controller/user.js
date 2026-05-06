@@ -468,7 +468,8 @@ const verifyPayment = async (req, res) => {
     const creatorId = metadata.creatorId;
     const messageText = metadata.message;
     const buyerEmail = transaction.customer.email;
-    const buyerPhone = metadata?.phone || null;
+    const buyerPhone = metadata?.buyerPhone || null;
+    const subject = metadata?.subject || null;
     const buyerName = metadata?.name || null;
     const amountPaid = transaction.amount / 100;
 
@@ -543,7 +544,7 @@ const verifyPayment = async (req, res) => {
 
     // 8️⃣ Send notifications (keep external)
 
-    const messagePreview = messageText;
+const messagePreview = messageText.slice(0, 30) + "...";
     const verifyUrl = process.env.CLIENT_URL;
     const phoneNumber= buyerPhone
 
@@ -555,7 +556,8 @@ const verifyPayment = async (req, res) => {
         buyerEmail,
         amountPaid,
         messagePreview,
-        phoneNumber
+        phoneNumber,
+        subject
       ),
       sendPaymentConfirmationToBuyer(
         buyerEmail,
