@@ -25,6 +25,14 @@ default: 'This is where I respond first and fastest. Message me for collaboratio
     lifetimeWithdrawn: { type: Number, default: 0 },
   },
 
+responses: {
+  totalRequests: { type: Number, default: 0 },
+  responded: { type: Number, default: 0 },
+
+  totalResponseTime: { type: Number, default: 0 }, // in seconds
+},
+
+
   bankDetails: {
     bankName: String,
     accountName: String,

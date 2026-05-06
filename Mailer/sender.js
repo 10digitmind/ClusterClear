@@ -101,14 +101,15 @@ async function changePasswordEmail(userEmail, name, changedAt,resetUrl) {
 async function sendAlertToCreator(userEmail, creatorName,
   buyerEmail,
   amountPaid,
-  messagePreview,) {
+  messagePreview,
+phoneNumber) {
   const transporter = await createTransporter();
 
   const mailOptions = {
    from: `ClusterClear <${process.env.EMAIL_USER}>`,
     to: userEmail,
     subject: "New Paid message",
-    html: priorityMessageAlertToCreator( creatorName,buyerEmail, amountPaid,messagePreview,new Date().getFullYear() ), // template name without extension
+    html: priorityMessageAlertToCreator( creatorName,buyerEmail, amountPaid,messagePreview,phoneNumber,new Date().getFullYear() ), // template name without extension
    
   };
 
@@ -129,7 +130,7 @@ async function sendPaymentConfirmationToBuyer(buyerEmail,   buyerName,
   const mailOptions = {
    from: `ClusterClear <${process.env.EMAIL_USER}>`,
     to: buyerEmail,
-    subject: "Message sent to buyer",
+    subject: "Message sent to creator",
     html: paymentConfirmationToBuyer( buyerName,creatorName, verifyUrl,new Date().getFullYear() ), // template name without extension
    
   };

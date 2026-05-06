@@ -44,7 +44,7 @@ router.patch("/step-two", authMiddleware,upload.single("profilePic"), stepTwo);
 router.post("/complete-onboarding", authMiddleware, completeOnboarding);
 router.patch("/update-creator-profile",authMiddleware,upload.single("profilePic"), updateCreatorProfile);
 router.put("/update-username", authMiddleware, updateUsername);
-router.post("/track-link-click/:username", trackCreatorLinkClick);
+router.get("/track-link-click/:username", trackCreatorLinkClick);
 router.get("/creator-dashboard-stats", authMiddleware, getCreatorDashboardStats);
 router.post("/create-waitlist", createWaitList);
 router.get("/waitlist-count", waitListCount);

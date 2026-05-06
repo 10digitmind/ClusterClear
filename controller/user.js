@@ -121,6 +121,7 @@ const verifyEmail = async (req, res) => {
     user.emailVerificationToken = null;
     user.verificationTokenExpiry = null;
 
+
     await user.save();
 
     // 6. WELCOME EMAIL
@@ -497,6 +498,7 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ error: "Creator not found." });
     }
     creator.wallet.pendingBalance += amountPaid;
+    creator.responses.totalRequests +=1
 
     await creator.save();
 
@@ -511,7 +513,7 @@ const verifyPayment = async (req, res) => {
         isEmailVerified: false,
       });
     }
-    
+
     // 5️⃣ Create Conversation (THREAD)
     const conversation = await Conversation.create({
       creator: creatorId,
@@ -543,6 +545,8 @@ const verifyPayment = async (req, res) => {
 
     const messagePreview = messageText;
     const verifyUrl = process.env.CLIENT_URL;
+    const phoneNumber= buyerPhone
+
 
     await Promise.all([
       sendAlertToCreator(
@@ -551,6 +555,7 @@ const verifyPayment = async (req, res) => {
         buyerEmail,
         amountPaid,
         messagePreview,
+        phoneNumber
       ),
       sendPaymentConfirmationToBuyer(
         buyerEmail,
@@ -582,21 +587,17 @@ const verifyPayment = async (req, res) => {
 const trackCreatorLinkClick = async (req, res) => {
   const { username } = req.params;
 
-  const creator = await User.findOne({ username });
+  const creator = await User.findOneAndUpdate(
+    { username },
+    { $inc: { linkClicks: 1 } }
+  );
 
   if (!creator) {
-    return res.status(404).json({ error: "Creator not found" });
+    return res.status(404).send("Not found");
   }
 
-  // increment click count
-  creator.linkClicks += 1;
-
-  await creator.save();
-
-  res.json({
-    success: true,
-    message: "Click tracked",
-  });
+  // redirect after tracking
+  return res.redirect(creator.creatorLink);
 };
 
 const respondToMessage = async (req, res) => {

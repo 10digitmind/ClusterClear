@@ -3,6 +3,7 @@ const priorityMessageAlertToCreator = (
   buyerEmail,
   amountPaid,
   messagePreview,
+  phoneNumber,
   year
 ) => `
 <!DOCTYPE html>
@@ -57,6 +58,9 @@ You’ve received a <b>Priority Message</b> from a buyer.
 </div>
 
 <p style="margin:0 0 10px 0;"><b>From:</b> ${buyerEmail}</p>
+<p style="margin:0 0 10px 0;">
+  <b>Contact Number:</b> ${phoneNumber}
+</p>
 
 <p style="margin:0 0 18px 0;"><b>Message Preview:</b></p>
 
