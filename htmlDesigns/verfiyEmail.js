@@ -16,17 +16,21 @@ const verifyEmail = (userName,verificationUrl,year) => `
 
 <!-- Header -->
 <tr>
-<td align="center" bgcolor="#ffffff" style="padding:24px;border-bottom:1px solid #f1f1f1;">
+  <td align="center" width="100%" bgcolor="white" style="padding:24px;border-bottom:1px solid #f1f1f1;background:#ffffff;">
+    
+    <a href="https://www.clusterclear.app" style="text-decoration:none;">
+      <span style="
+        font-size:24px;
+        font-weight:700;
+        color:#6355FF;
+        font-family:Arial, Helvetica, sans-serif;
+        letter-spacing:0.5px;
+      ">
+        ClusterClear
+      </span>
+    </a>
 
-<a href="https://www.clusterclear.app" style="text-decoration:none;">
-<img 
-src="https://i.postimg.cc/J4zBvpSN/newcluster.png"
-alt="ClusterClear"
-width="200"
-style="display:block;border:0;outline:none;text-decoration:none;margin:auto;">
-</a>
-
-</td>
+  </td>
 </tr>
 
 <!-- Body -->

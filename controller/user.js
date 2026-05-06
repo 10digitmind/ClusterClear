@@ -5,16 +5,15 @@ const crypto = require("crypto");
 const generateUsername = require("../controller/Utils/generateUsername");
 const generateToken = require("../controller/Utils/generateToken");
 const CreatorProfile = require("../models/CreatorProfile");
-const axios = require('axios')
+const axios = require("axios");
 const Waitlist = require("../models/Waitlist");
 const Analytics = require("../models/analyticsSchema");
 const Conversation = require("../models/conversation");
 const Message = require("../models/MessageSchema"); // re
-const getDateParts = require('../controller/Utils/getDateParts')
-const uploadToCloudflare = require('../controller/Utils/cloudinaryConfig')
-const accountDeletion = require('../models/accountDeletionSchema')
-
-
+const getDateParts = require("../controller/Utils/getDateParts");
+const uploadToCloudflare = require("../controller/Utils/cloudinaryConfig");
+const accountDeletion = require("../models/accountDeletionSchema");
+const mongoose = require("mongoose");
 
 const {
   sendVerificationEmail,
@@ -23,14 +22,13 @@ const {
   changePasswordEmail,
   waitlist,
   sendAlertToCreator,
-  paymentConfirmationToBuyer
-
+  sendPaymentConfirmationToBuyer,
 } = require("../Mailer/sender");
 // Helper: generate JWT
 
 const signup = async (req, res) => {
   try {
-    const { email, password, } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res
@@ -40,7 +38,9 @@ const signup = async (req, res) => {
 
     const existing = await User.findOne({ email });
     if (existing)
-      return res.status(400).json({ message: "Email already exists please log in " });
+      return res
+        .status(400)
+        .json({ message: "Email already exists please log in " });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -51,26 +51,24 @@ const signup = async (req, res) => {
       password: hashedPassword,
       emailVerificationToken,
       wallet: {
-    availableBalance: 0,
-    pendingBalance: 0,
-    totalEarned: 0,
-    lifetimeWithdrawn: 0,
-  },
+        availableBalance: 0,
+        pendingBalance: 0,
+        totalEarned: 0,
+        lifetimeWithdrawn: 0,
+      },
 
-   bankDetails: {
-    bankName: null,
-    accountName: null,
-    accountNumber: null,
-
-  },
-      onboardingStage:'none'
-    
+      bankDetails: {
+        bankName: null,
+        accountName: null,
+        accountNumber: null,
+      },
+      onboardingStage: "none",
     });
 
- const userName = email.split("@")[0];
+    const userName = email.split("@")[0];
     const userEmail = email.toLowerCase().trim();
     const token = emailVerificationToken;
-   
+
     // Send email verification if email exists
     if (email) {
       await sendVerificationEmail(userEmail, userName, token);
@@ -96,19 +94,17 @@ const verifyEmail = async (req, res) => {
       emailVerificationToken: token,
     });
     // 2. INVALID TOKEN
-  if (!user ) {
+    if (!user) {
       return res.status(400).json({
         status: "Invalid or expired token",
       });
     }
-   // 3. ALREADY VERIFIED (ONLY THIS USER)
+    // 3. ALREADY VERIFIED (ONLY THIS USER)
     if (user.isEmailVerified) {
       return res.json({
         status: "already_verified",
       });
     }
-
-  
 
     // 4. EXPIRY CHECK
     if (
@@ -139,7 +135,6 @@ const verifyEmail = async (req, res) => {
       status: "verified",
       user: user.onboardingStage,
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -186,7 +181,6 @@ const login = async (req, res) => {
       token: generateToken(user),
       user: userSafe,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -222,7 +216,6 @@ const resetPassword = async (req, res) => {
     const { password } = req.body;
     const { token } = req.params;
 
-    
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
@@ -260,11 +253,12 @@ const changePassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL}/dashboard` || 'https://www.clusterclear.app/dashboard';
+    const resetUrl =
+      `${process.env.CLIENT_URL}/dashboard` ||
+      "https://www.clusterclear.app/dashboard";
     const changedAt = new Date().toLocaleString("en-US");
-    
-   
-    changePasswordEmail(user.email, user.username,changedAt, resetUrl,);
+
+    changePasswordEmail(user.email, user.username, changedAt, resetUrl);
 
     res.json({ message: "Password changed successfully" });
   } catch (err) {
@@ -273,10 +267,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-
-// create profile 
-
-
+// create profile
 
 const updateCreatorProfile = async (req, res) => {
   try {
@@ -345,12 +336,11 @@ const updateCreatorProfile = async (req, res) => {
       const imageUrl = await uploadToCloudflare(
         req.file.buffer,
         req.file.originalname,
-        req.file.mimetype
+        req.file.mimetype,
       );
 
       creatorProfile.profilePic = imageUrl;
     }
-
 
     await creatorProfile.save();
 
@@ -358,7 +348,6 @@ const updateCreatorProfile = async (req, res) => {
       message: "Profile updated successfully",
       creatorProfile,
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -380,16 +369,15 @@ const updateUsername = async (req, res) => {
     // Update username
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.userId },
-      { username: username },           // use the variable, not string
-      { returnDocument: 'after' }       // returns the updated document
+      { username: username }, // use the variable, not string
+      { returnDocument: "after" }, // returns the updated document
     );
 
     res.json({
       message: "Username updated",
       username: updatedUser.username,
-      link: `https://clusterclear.app/${updatedUser.username}` // use updatedUser
+      link: `https://clusterclear.app/${updatedUser.username}`, // use updatedUser
     });
-
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
@@ -397,13 +385,7 @@ const updateUsername = async (req, res) => {
 
 const initialisePayment = async (req, res) => {
   try {
-    const {
-      creatorId,
-      buyerEmail,
-      buyerPhone,
-      subject,
-      message,
-    } = req.body;
+    const { creatorId, buyerEmail, buyerPhone, subject, message } = req.body;
 
     if (!creatorId || !buyerEmail || !message) {
       return res.status(400).json({
@@ -439,17 +421,14 @@ const initialisePayment = async (req, res) => {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return res.json({
       success: true,
-      paymentLink:
-        response.data.data.authorization_url,
-      reference:
-        response.data.data.reference,
+      paymentLink: response.data.data.authorization_url,
+      reference: response.data.data.reference,
     });
-
   } catch (error) {
     console.error(error.response?.data || error);
 
@@ -458,9 +437,6 @@ const initialisePayment = async (req, res) => {
     });
   }
 };
-
-
-
 
 const verifyPayment = async (req, res) => {
   const { reference } = req.params;
@@ -477,7 +453,7 @@ const verifyPayment = async (req, res) => {
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         },
-      }
+      },
     );
 
     const transaction = response.data.data;
@@ -498,24 +474,31 @@ const verifyPayment = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(creatorId)) {
       return res.status(400).json({ error: "Invalid creator ID." });
     }
-
+    const creator = await User.findById(creatorId);
+    const creatorName = creator.username || creator.email.split("@")[0];
     // 2️⃣ Prevent duplicate processing
-    const existingConversation = await Conversation.findOne({ buyerEmail, creator: creatorId, paymentStatus: "paid" });
+    const existingConversation = await Conversation.findOne({
+      buyerEmail,
+      creator: creatorId,
+      paymentStatus: "paid",
+    });
 
     if (existingConversation) {
       return res.json({
         success: true,
         message: "Payment already processed.",
+        creatorName: creatorName,
       });
     }
 
     // 3️⃣ Get or create creator user
-    const creator = await User.findById(creatorId);
 
     if (!creator) {
       return res.status(404).json({ error: "Creator not found." });
     }
-creator.pendingBalance+=amountPaid
+    creator.wallet.pendingBalance += amountPaid;
+
+    await creator.save();
 
     // 4️⃣ Create or get buyer user
     let buyerUser = await User.findOne({ email: buyerEmail });
@@ -523,12 +506,12 @@ creator.pendingBalance+=amountPaid
     if (!buyerUser) {
       buyerUser = await User.create({
         email: buyerEmail,
-        role: "buyer",
+        role: "Fan",
         isPaidUser: true,
         isEmailVerified: false,
       });
     }
-
+    
     // 5️⃣ Create Conversation (THREAD)
     const conversation = await Conversation.create({
       creator: creatorId,
@@ -557,23 +540,23 @@ creator.pendingBalance+=amountPaid
     // (if you have CreatorProfile, update here)
 
     // 8️⃣ Send notifications (keep external)
-    const creatorName = creator.username || creator.email.split("@")[0];
-const messagePreview = messageText
-const verifyUrl = process.env.CLIENT_URL
+
+    const messagePreview = messageText;
+    const verifyUrl = process.env.CLIENT_URL;
 
     await Promise.all([
       sendAlertToCreator(
-      creator.email,
+        creator.email,
         creatorName,
         buyerEmail,
         amountPaid,
-        messagePreview
+        messagePreview,
       ),
-
-      paymentConfirmationToBuyer(
+      sendPaymentConfirmationToBuyer(
         buyerEmail,
+        buyerName,
         creatorName,
-        verifyUrl
+        verifyUrl,
       ),
     ]);
 
@@ -582,17 +565,19 @@ const verifyUrl = process.env.CLIENT_URL
       success: true,
       message: "Payment verified and conversation created.",
       conversationId: conversation._id,
+      creatorName: creatorName,
     });
-
   } catch (error) {
-    console.error("Payment verification error:", error.response?.data || error.message);
+    console.error(
+      "Payment verification error:",
+      error.response?.data || error.message,
+    );
 
     return res.status(500).json({
       error: "Failed to verify payment.",
     });
   }
 };
-
 
 const trackCreatorLinkClick = async (req, res) => {
   const { username } = req.params;
@@ -612,7 +597,7 @@ const trackCreatorLinkClick = async (req, res) => {
     success: true,
     message: "Click tracked",
   });
-}
+};
 
 const respondToMessage = async (req, res) => {
   const { messageId } = req.body;
@@ -645,25 +630,23 @@ const respondToMessage = async (req, res) => {
   });
 
   const responseTime =
- (message.respondedAt - message.createdAt) / (1000 * 60 * 60); // hours
+    (message.respondedAt - message.createdAt) / (1000 * 60 * 60); // hours
 
-creator.totalResponded += 1;
-creator.totalResponseTime += responseTime;
+  creator.totalResponded += 1;
+  creator.totalResponseTime += responseTime;
 
-creator.averageResponseTime =
- creator.totalResponseTime / creator.totalResponded;
+  creator.averageResponseTime =
+    creator.totalResponseTime / creator.totalResponded;
 
-creator.responseRate =
- (creator.totalResponded / creator.totalRequests) * 100;
+  creator.responseRate = (creator.totalResponded / creator.totalRequests) * 100;
 
-await creator.save();
+  await creator.save();
 
   res.json({
     success: true,
     message: "Response recorded",
   });
-}
-
+};
 
 const getCreatorDashboardStats = async (req, res) => {
   const creatorId = req.user._id;
@@ -682,7 +665,7 @@ const getCreatorDashboardStats = async (req, res) => {
     totalResponded,
     averageResponseTime,
     responseRate,
-    priorityFee
+    priorityFee,
   } = creatorProfile;
 
   // conversion rate
@@ -698,11 +681,10 @@ const getCreatorDashboardStats = async (req, res) => {
       responseRate,
       averageResponseTime,
       conversionRate,
-      priorityFee
-    }
+      priorityFee,
+    },
   });
 };
-
 
 const createWaitList = async (req, res) => {
   try {
@@ -735,13 +717,12 @@ const createWaitList = async (req, res) => {
     });
 
     await newUser.save();
-await waitlist(normalizedEmail)
+    await waitlist(normalizedEmail);
     // ✅ Success response
     res.status(201).json({
       msg: "Thanks for joining 🚀 We’ll notify you when we launch",
       existing: false,
     });
-
   } catch (err) {
     console.error("WAITLIST ERROR:", err);
     res.status(500).json({
@@ -750,16 +731,15 @@ await waitlist(normalizedEmail)
   }
 };
 
-
 const waitListCount = async (req, res) => {
   try {
-  const count = await Waitlist.countDocuments();
-  res.json({ count })
+    const count = await Waitlist.countDocuments();
+    res.json({ count });
   } catch (err) {
     console.error(err);
     res.status(500).json(err);
   }
-}
+};
 
 const trackVisit = async (req, res) => {
   try {
@@ -788,14 +768,14 @@ const trackVisit = async (req, res) => {
   }
 };
 
-
 // GET /buyer/messages
 const getBuyerMessages = async (req, res) => {
   try {
     const email = req.user.email;
 
-    const messages = await Message.find({ buyerEmail: email })
-      .sort({ createdAt: -1 });
+    const messages = await Message.find({ buyerEmail: email }).sort({
+      createdAt: -1,
+    });
 
     res.json(messages);
   } catch (error) {
@@ -807,8 +787,9 @@ const getCreatorMessages = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const messages = await Message.find({ creator: userId })
-      .sort({ createdAt: -1 });
+    const messages = await Message.find({ creator: userId }).sort({
+      createdAt: -1,
+    });
 
     res.json(messages);
   } catch (error) {
@@ -817,15 +798,13 @@ const getCreatorMessages = async (req, res) => {
 };
 // GET /me
 const getMe = async (req, res) => {
-
   try {
     const user = await User.findById(req.userId).select("-password");
-    if (!user){
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     res.json(user);
   } catch (error) {
- 
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -837,7 +816,7 @@ const checkAvailableUsername = async (req, res) => {
     if (!username) {
       return res.status(400).json({
         message: "Username is required",
-        available: false
+        available: false,
       });
     }
 
@@ -848,7 +827,7 @@ const checkAvailableUsername = async (req, res) => {
     if (!usernameRegex.test(username)) {
       return res.status(400).json({
         message: "Invalid username format",
-        available: false
+        available: false,
       });
     }
 
@@ -857,20 +836,19 @@ const checkAvailableUsername = async (req, res) => {
     if (reserved.includes(username)) {
       return res.status(400).json({
         message: "Username not allowed",
-        available: false
+        available: false,
       });
     }
 
     const existingUser = await User.findOne({ username });
 
     return res.json({
-      available: !existingUser
+      available: !existingUser,
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Server error",
-      available: false
+      available: false,
     });
   }
 };
@@ -884,10 +862,9 @@ const stepOne = async (req, res) => {
     }
     const normalizedUsername = username.toLowerCase().trim();
 
-    
     const existingUser = await User.findOne({
       username: normalizedUsername,
-      _id: { $ne: req.userId }
+      _id: { $ne: req.userId },
     });
 
     if (existingUser) {
@@ -901,16 +878,15 @@ const stepOne = async (req, res) => {
         fullName,
         role: userType,
         onboardingStage: "step_two",
-        creatorLink: `https://clusterclear.app/creator/${normalizedUsername}`
+        creatorLink: `https://clusterclear.app/creator/${normalizedUsername}`,
       },
-      { new: true }
+      { new: true },
     );
 
     return res.status(200).json({
       message: "Step one completed",
-      user
+      user,
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -953,7 +929,7 @@ const stepTwo = async (req, res) => {
       profilePicUrl = await uploadToCloudflare(
         req.file.buffer,
         req.file.originalname,
-        req.file.mimetype
+        req.file.mimetype,
       );
     }
 
@@ -986,27 +962,25 @@ const stepTwo = async (req, res) => {
     // ✅ Move onboarding forward
     updateData.onboardingStage = "completed";
 
-    const updatedUser = await User.findByIdAndUpdate(
-  req.userId,
-  updateData,
-  { returnDocument: "after" }
-).select("-password");
+    const updatedUser = await User.findByIdAndUpdate(req.userId, updateData, {
+      returnDocument: "after",
+    }).select("-password");
 
-    return res.status(200).json({updatedUser,message:"Onboarding completed"});
-
+    return res
+      .status(200)
+      .json({ updatedUser, message: "Onboarding completed" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-
 const completeOnboarding = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.userId,
       { onboardingCompleted: true },
-      { new: true }
+      { new: true },
     );
 
     res.json(user);
@@ -1014,9 +988,6 @@ const completeOnboarding = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
 
 const resendVerificationEmail = async (req, res) => {
   try {
@@ -1046,23 +1017,16 @@ const resendVerificationEmail = async (req, res) => {
     await user.save();
 
     // 🌍 Send email
-    await sendVerificationEmail(
-      user.email,
-      user.name,
-      token
-    );
+    await sendVerificationEmail(user.email, user.name, token);
 
     return res.json({
       message: "Verification email sent successfully",
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 // controllers/userController.js
 
@@ -1085,11 +1049,11 @@ const updateBankDetails = async (req, res) => {
     }
 
     // account number validation (adjust by country if needed)
-   if (!/^\d{10}$/.test(accountNumber)) {
-  return res.status(400).json({
-    message: "Account number must be 10 digits",
-  });
-}
+    if (!/^\d{10}$/.test(accountNumber)) {
+      return res.status(400).json({
+        message: "Account number must be 10 digits",
+      });
+    }
 
     // update user bank details
     const updatedUser = await User.findByIdAndUpdate(
@@ -1103,14 +1067,13 @@ const updateBankDetails = async (req, res) => {
       },
       {
         returnDocument: "after",
-      }
+      },
     ).select("-password");
 
     return res.status(200).json({
       message: "Bank details updated successfully",
       user: updatedUser,
     });
-
   } catch (error) {
     console.error(error);
 
@@ -1119,8 +1082,6 @@ const updateBankDetails = async (req, res) => {
     });
   }
 };
-
-
 
 const deleteAccount = async (req, res) => {
   try {
@@ -1159,7 +1120,6 @@ const deleteAccount = async (req, res) => {
       feedback: feedback || "",
     });
 
-   
     // delete user account
     await User.findByIdAndDelete(userId);
 
@@ -1174,10 +1134,6 @@ const deleteAccount = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 const getCreatorByUsername = async (req, res) => {
   try {
@@ -1195,7 +1151,7 @@ const getCreatorByUsername = async (req, res) => {
       username: username.toLowerCase().trim(),
       role: "creator",
     }).select(
-      "username bio profilePic priorityFee isEmailVerified creatorLink totalRequests totalResponded averageResponseTime responseRate"
+      "username bio profilePic priorityFee isEmailVerified creatorLink totalRequests totalResponded averageResponseTime responseRate",
     );
 
     if (!creator) {
@@ -1215,10 +1171,6 @@ const getCreatorByUsername = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 module.exports = {
   signup,
@@ -1247,5 +1199,5 @@ module.exports = {
   resendVerificationEmail,
   updateBankDetails,
   deleteAccount,
-  getCreatorByUsername
+  getCreatorByUsername,
 };
